@@ -4,7 +4,7 @@ const router = express.Router();
 
 router.get('/sample', async (req, res) => {
     try {
-        const columns = await getSampleColumns('adult');
+        const columns = await getSampleColumns('adult_income');
         res.json({ columns });
     } catch (err) {
         res.status(err.statusCode || 500).json({ error: err.message });

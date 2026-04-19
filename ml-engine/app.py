@@ -8,8 +8,6 @@ import traceback
 
 # Import core modules
 import sys
-import os
-
 sys.path.append(os.path.dirname(__file__))
 
 from core.bias_detector import run_bias_analysis
@@ -24,6 +22,9 @@ app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
 UPLOAD_FOLDER = tempfile.gettempdir()
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+# ------------------------------------------------------------------
+# SAMPLE DATASETS CONFIG
+# ------------------------------------------------------------------
 SAMPLE_DATASETS = {
     'adult_income': {
         'file': 'datasets/adult_income.csv',
@@ -42,6 +43,9 @@ SAMPLE_DATASETS = {
     }
 }
 
+# ------------------------------------------------------------------
+# HELPERS
+# ------------------------------------------------------------------
 def save_uploaded_file(file):
     if file.filename == '':
         raise ValueError('No file selected')
@@ -58,6 +62,9 @@ def get_sample_path(name):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_dir, SAMPLE_DATASETS[name]['file'])
 
+# ------------------------------------------------------------------
+# BASIC ROUTES
+# ------------------------------------------------------------------
 @app.route("/")
 def home():
     return "FairLens ML Engine Running 🚀"
@@ -66,6 +73,9 @@ def home():
 def health():
     return jsonify({"status": "ok"})
 
+# ------------------------------------------------------------------
+# FILE-BASED ROUTES
+# ------------------------------------------------------------------
 @app.route('/api/columns', methods=['POST'])
 def get_columns():
     try:
@@ -149,6 +159,83 @@ def mitigate():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+# ------------------------------------------------------------------
+# ✅ SAMPLE DATASET ROUTES (THIS WAS MISSING)
+# ------------------------------------------------------------------
+
+@app.route('/api/sample/<name>/columns', methods=['GET'])
+def sample_columns(name):
+    try:
+        path = get_sample_path(name)
+        df = pd.read_csv(path)
+        return jsonify({'columns': df.columns.tolist()})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/sample/<name>/analyze', methods=['GET'])
+def sample_analyze(name):
+    try:
+        target = request.args.get('targetCol')
+        sensitive = request.args.get('sensitiveCol')
+
+        path = get_sample_path(name)
+        result = run_bias_analysis(path, target, sensitive)
+
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/sample/<name>/explain', methods=['GET'])
+def sample_explain(name):
+    try:
+        target = request.args.get('targetCol')
+        sensitive = request.args.get('sensitiveCol')
+
+        path = get_sample_path(name)
+        df = pd.read_csv(path)
+
+        X, y, s = preprocess(df, target, sensitive)
+
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.model_selection import train_test_split
+
+        X_train, X_test, y_train, y_test, s_train, s_test = train_test_split(
+            X, y, s, test_size=0.3, random_state=42
+        )
+
+        model = LogisticRegression(max_iter=1000)
+        model.fit(X_train, y_train)
+
+        result = explain_model(model, X_train, X_test, X.columns.tolist(), s_test)
+
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/sample/<name>/mitigate', methods=['GET'])
+def sample_mitigate(name):
+    try:
+        target = request.args.get('targetCol')
+        sensitive = request.args.get('sensitiveCol')
+
+        path = get_sample_path(name)
+        result = mitigate_bias(path, target, sensitive)
+
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+# ------------------------------------------------------------------
+# RUN SERVER
+# ------------------------------------------------------------------
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
