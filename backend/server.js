@@ -52,7 +52,7 @@ if (NODE_ENV === 'development') {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const sampleRoutes = require('./routes/sample');
+
 app.use('/api', sampleRoutes);
 
 // ------------------------------------------------------------------
