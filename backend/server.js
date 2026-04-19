@@ -17,7 +17,7 @@ const resultsRoutes = require('./routes/results');
 const explainRoutes = require('./routes/explain');
 const mitigateRoutes = require('./routes/mitigate');
 const sampleRoutes = require('./routes/sample');
-
+app.use('/api', sampleRoutes);
 // ------------------------------------------------------------------
 // INITIALIZATION
 // ------------------------------------------------------------------
@@ -53,7 +53,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-app.use('/api', sampleRoutes);
+
 
 // ------------------------------------------------------------------
 // CREATE TEMP DIRECTORY IF NOT EXISTS
