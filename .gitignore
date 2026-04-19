@@ -1,0 +1,18 @@
+# Node (VERY IMPORTANT)
+frontend/node_modules/
+**/node_modules/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Env
+.env
+
+# OS
+.DS_Store
+
+# Build
+dist/
+build/
